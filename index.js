@@ -1,9 +1,9 @@
-import express from 'express';
-
+const express = require('express');
 const app = express();
+
 app.use(express.json());
 
-// 이미지 URL 매핑
+// 실제 GitHub 이미지 URL
 const images = {
   '5G요금제': 'https://github.com/tworldstore-admin/chatbot-images/blob/main/T%EC%9A%94%EA%B8%88%EC%A0%9C_5G.png?raw=true',
   '0청년요금제': 'https://github.com/tworldstore-admin/chatbot-images/blob/main/T%EC%9A%94%EA%B8%88%EC%A0%9C_0%EC%B2%AD%EB%85%84.png?raw=true',
@@ -15,9 +15,14 @@ const images = {
 // 스킬 엔드포인트
 app.post('/api/image', (req, res) => {
   try {
-    // 카카오에서 전달받은 파라미터
-    const params = req.body.action?.params || {};
-    const imageType = params.imageType;
+    const action = req.body.action || {};
+    
+    // params와 clientExtra 둘 다 확인
+    const params = action.params || {};
+    const clientExtra = action.clientExtra || {};
+    
+    // imageType을 params에서 먼저 찾고, 없으면 clientExtra에서 찾기
+    const imageType = params.imageType || clientExtra.imageType;
     
     console.log('요청받은 이미지 타입:', imageType);
     
@@ -29,13 +34,11 @@ app.post('/api/image', (req, res) => {
       return res.json({
         version: "2.0",
         template: {
-          outputs: [
-            {
-              simpleText: {
-                text: "요청하신 이미지를 찾을 수 없습니다.\n이미지 타입: " + imageType
-              }
+          outputs: [{
+            simpleText: {
+              text: `요청하신 이미지를 찾을 수 없습니다.\n이미지 타입: ${imageType}`
             }
-          ]
+          }]
         }
       });
     }
@@ -44,14 +47,12 @@ app.post('/api/image', (req, res) => {
     res.json({
       version: "2.0",
       template: {
-        outputs: [
-          {
-            simpleImage: {
-              imageUrl: imageUrl,
-              altText: imageType + " 안내"
-            }
+        outputs: [{
+          simpleImage: {
+            imageUrl: imageUrl,
+            altText: imageType + " 안내"
           }
-        ]
+        }]
       }
     });
     
@@ -60,13 +61,11 @@ app.post('/api/image', (req, res) => {
     res.json({
       version: "2.0",
       template: {
-        outputs: [
-          {
-            simpleText: {
-              text: "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
-            }
+        outputs: [{
+          simpleText: {
+            text: "오류가 발생했습니다. 잠시 후 다시 시도해주세요."
           }
-        ]
+        }]
       }
     });
   }
@@ -75,10 +74,6 @@ app.post('/api/image', (req, res) => {
 // 헬스체크 (서버 작동 확인용)
 app.get('/', (req, res) => {
   res.send('T-World 챗봇 스킬 서버 정상 작동 중');
-});
-
-app.get('/api/image', (req, res) => {
-  res.send('이 URL은 POST 요청만 받습니다.');
 });
 
 // 서버 시작
